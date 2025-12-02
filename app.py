@@ -5,6 +5,7 @@ from typing import Dict, Any, List
 
 import streamlit as st
 import pandas as pd
+import streamlit.components.v1 as components
 
 # PDF
 try:
@@ -25,7 +26,7 @@ DATA_DIR = BASE_DIR / "data"
 ATT_DIR = DATA_DIR / "attachments"
 
 DATA_DIR.mkdir(exist_ok=True)
-ATT_DIR.mkdir(exist_ok=True)
+ATT_DIR.mkdir(parents=True, exist_ok=True)
 
 DEFAULT_FILE = DATA_DIR / "default_flow.json"
 
@@ -36,7 +37,8 @@ DEFAULT_FILE = DATA_DIR / "default_flow.json"
 PAGE_CSS = """
 <style>
 .stApp {
-    background-color: #f5f5f7;
+    background-color: #f4f4f7;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 /* Top metrics */
@@ -51,66 +53,10 @@ PAGE_CSS = """
     margin-top: -6px;
 }
 
-/* Phase chevrons */
-.phase-row {
-    display: flex;
-    gap: 8px;
-    margin: 10px 0 25px 0;
-    justify-content: center;
-}
-.phase-chevron {
-    position: relative;
-    padding: 14px 28px;
-    background: #ffe58a;
-    color: #333;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-    font-size: 13px;
-    clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%, 10% 50%);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-}
-
-/* Step cards under the flow */
-.step-flow-container {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding: 10px 4px 0 4px;
-    gap: 10px;
-}
-.step-card {
-    min-width: 130px;
-    max-width: 150px;
-    background: white;
-    border-radius: 8px;
-    padding: 8px 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-    font-size: 11px;
-    position: relative;
-    border-top: 3px solid #ddd;
-    cursor: default;
-}
-.step-card-title {
-    font-weight: 600;
-    margin-bottom: 4px;
-}
-.step-card-meta {
-    color: #666;
-    font-size: 10px;
-}
-.step-card-path-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    display: inline-block;
-    margin-right: 4px;
-}
-
 /* Legend */
 .legend-box {
-    margin-top: 12px;
-    background: white;
+    margin-top: 10px;
+    background: #ffffff;
     border-radius: 10px;
     padding: 8px 12px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.12);
@@ -119,21 +65,13 @@ PAGE_CSS = """
 .legend-item {
     display: inline-flex;
     align-items: center;
-    margin-right: 14px;
+    margin-right: 16px;
 }
 .legend-dot {
-    width: 10px;
-    height: 10px;
+    width: 11px;
+    height: 11px;
     border-radius: 999px;
-    margin-right: 5px;
-}
-
-/* For narrower screens */
-@media (max-width: 900px) {
-    .phase-row {
-        flex-direction: column;
-        align-items: stretch;
-    }
+    margin-right: 6px;
 }
 </style>
 """
@@ -144,6 +82,13 @@ PHASES = [
     "Execute & Adopt",
     "Close & Sustain",
 ]
+
+PHASE_COLORS = {
+    "Pilot & Initiate": "#ffe7b8",
+    "Prepare & Startup": "#e8f4d9",
+    "Execute & Adopt": "#e7e8fb",
+    "Close & Sustain": "#f8f1c7",
+}
 
 PATH_COLORS = {
     "Primary": "#16a34a",   # green
@@ -208,78 +153,194 @@ def render_metrics(data: Dict[str, Any]):
 
 
 # ------------------------------------------------------
-# FLOW VISUAL (PHASES + MINI CARDS)
+# ENTERPRISE FLOW MAP (SVG)
 # ------------------------------------------------------
-def render_phase_row():
-    html = '<div class="phase-row">'
-    for phase in PHASES:
-        html += f'<div class="phase-chevron">{phase}</div>'
-    html += "</div>"
-    return html
+def _truncate(text: str, max_len: int) -> str:
+    text = text or ""
+    return text if len(text) <= max_len else text[: max_len - 1] + "…"
 
 
-def render_step_flow(data: Dict[str, Any]) -> str:
+def build_flow_svg(data: Dict[str, Any]) -> str:
+    """
+    Returns full HTML (svg inside a div) to embed via components.html
+    """
     nodes = data.get("nodes", [])
+    if not nodes:
+        return "<div>No steps defined.</div>"
 
-    html = '<div class="step-flow-container">'
-    for node in nodes:
-        label = node.get("label", "")
+    width = 1300
+    height = 420
+
+    n = len(nodes)
+    margin_x = 100
+    usable_width = width - 2 * margin_x
+    if n > 1:
+        step_x = usable_width / (n - 1)
+    else:
+        step_x = 0
+
+    center_y = 220
+    card_w = 190
+    card_h = 110
+    ribbon_y_offset = 60
+
+    # Precompute positions
+    positions = []
+    for i in range(n):
+        x = margin_x + i * step_x
+        positions.append((x, center_y))
+
+    # Start SVG
+    svg_parts = [
+        f'<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" '
+        'xmlns="http://www.w3.org/2000/svg">'
+        '<defs>'
+        '<filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">'
+        '  <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.12)"/>'
+        '</filter>'
+        '</defs>'
+        # background
+        '<rect x="0" y="0" width="100%" height="100%" fill="#f6f6f8" />'
+    ]
+
+    # Ribbons (behind cards)
+    for i in range(n - 1):
+        x1, y1 = positions[i]
+        x2, y2 = positions[i + 1]
+        node = nodes[i]
+        path = node.get("path") or DEFAULT_PATH
+        color = PATH_COLORS.get(path, "#d4d4d8")
+
+        ctrl1_x = x1 + step_x * 0.35
+        ctrl2_x = x2 - step_x * 0.35
+        ctrl_y = center_y - ribbon_y_offset
+
+        path_d = (
+            f"M{x1},{y1} "
+            f"C{ctrl1_x},{ctrl_y} {ctrl2_x},{ctrl_y} {x2},{y2}"
+        )
+
+        svg_parts.append(
+            f'<path d="{path_d}" stroke="{color}" stroke-opacity="0.45" '
+            f'stroke-width="14" fill="none" />'
+        )
+
+    # Phase chevrons behind (simple rectangles w/ notches effect)
+    phase_band_y = 70
+    phase_band_h = 40
+    phase_width = usable_width / len(PHASES)
+    for idx, phase in enumerate(PHASES):
+        x0 = margin_x + idx * phase_width
+        x1 = x0 + phase_width
+        fill = PHASE_COLORS.get(phase, "#ffe7b8")
+        svg_parts.append(
+            f'<rect x="{x0}" y="{phase_band_y}" width="{phase_width-10}" '
+            f'height="{phase_band_h}" rx="4" ry="4" fill="{fill}" />'
+        )
+        svg_parts.append(
+            f'<text x="{x0 + (phase_width-10)/2}" y="{phase_band_y + 25}" '
+            f'font-size="13" font-weight="600" text-anchor="middle" '
+            f'fill="#333">{phase.upper()}</text>'
+        )
+
+    # Cards
+    for i, node in enumerate(nodes):
+        x, y = positions[i]
+        card_x = x - card_w / 2
+        card_y = y - card_h / 2
+
         phase = node.get("phase", "")
-        status = node.get("status", "")
+        phase_fill = PHASE_COLORS.get(phase, "#fff7d6")
+
+        label = _truncate(node.get("label", ""), 30)
         time_est = node.get("time_estimate", "")
         success = node.get("success_rate", "")
         volume = node.get("volume_pct", "")
-        owner = node.get("owner", "")
-
+        status = node.get("status", "")
         path = node.get("path") or DEFAULT_PATH
-        color = PATH_COLORS.get(path, "#9ca3af")
+        path_color = PATH_COLORS.get(path, "#9ca3af")
 
         tooltip_lines = [
             f"Phase: {phase}",
             f"Path: {path}",
             f"Status: {status or 'N/A'}",
-            f"Owner: {owner or 'N/A'}",
             f"Time: {time_est or 'N/A'}",
             f"Success: {success or 'N/A'}",
             f"Volume: {volume or 'N/A'}%",
         ]
-        tooltip = "&#10;".join(tooltip_lines)  # newline in HTML title attribute
+        tooltip = "\\n".join(tooltip_lines)
 
-        meta_parts = []
-        if status:
-            meta_parts.append(status)
+        svg_parts.append('<g filter="url(#cardShadow)">')
+        # Card base
+        svg_parts.append(
+            f'<rect x="{card_x}" y="{card_y}" width="{card_w}" height="{card_h}" '
+            f'rx="10" ry="10" fill="#ffffff" stroke="#e5e7eb" />'
+        )
+        # Phase bar on top of card
+        svg_parts.append(
+            f'<rect x="{card_x}" y="{card_y}" width="{card_w}" height="22" '
+            f'rx="10" ry="10" fill="{phase_fill}" />'
+        )
+        # Path dot
+        svg_parts.append(
+            f'<circle cx="{card_x + 14}" cy="{card_y + 11}" r="4" fill="{path_color}" />'
+        )
+        # Phase text
+        svg_parts.append(
+            f'<text x="{card_x + 26}" y="{card_y + 15}" font-size="10" '
+            f'fill="#374151">{phase}</text>'
+        )
+        # Title
+        svg_parts.append(
+            f'<text x="{card_x + 14}" y="{card_y + 40}" font-size="12" '
+            f'font-weight="600" fill="#111827">{label}</text>'
+        )
+        # Metrics line
+        metrics = []
         if time_est:
-            meta_parts.append(time_est)
+            metrics.append(time_est)
         if success:
-            meta_parts.append(f"{success} success")
+            metrics.append(f"{success} success")
+        if volume not in ("", None):
+            metrics.append(f"{volume}% volume")
+        metrics_text = " · ".join(metrics)
+        svg_parts.append(
+            f'<text x="{card_x + 14}" y="{card_y + 64}" font-size="10" '
+            f'fill="#6b7280">{metrics_text}</text>'
+        )
+        # Status
+        if status:
+            svg_parts.append(
+                f'<text x="{card_x + 14}" y="{card_y + 86}" font-size="10" '
+                f'fill="#4b5563">Status: {status}</text>'
+            )
 
-        html += f"""
-        <div class="step-card" title="{tooltip}">
-          <div class="step-card-title">
-            <span class="step-card-path-dot" style="background:{color};"></span>{label}
-          </div>
-          <div class="step-card-meta">{phase}</div>
-          <div class="step-card-meta">{' · '.join(meta_parts)}</div>
-        </div>
-        """
+        # Tooltip
+        svg_parts.append(f'<title>{tooltip}</title>')
+        svg_parts.append('</g>')
 
-    html += "</div>"
+    svg_parts.append("</svg>")
+
+    svg = "".join(svg_parts)
+    html = f"""
+    <div style="width:100%; overflow-x:auto; padding:4px 0;">
+      {svg}
+    </div>
+    """
     return html
 
 
 def render_legend(data: Dict[str, Any]) -> str:
-    # Calculate simple distribution by path
     counts = {p: 0 for p in PATH_COLORS.keys()}
     for node in data.get("nodes", []):
         path = node.get("path") or DEFAULT_PATH
         if path in counts:
             counts[path] += 1
-
     total = sum(counts.values()) or 1
 
-    html = '<div class="legend-box"><strong>Paths</strong> &nbsp;'
+    html = '<div class="legend-box"><strong>Paths</strong>&nbsp;'
     for path, color in PATH_COLORS.items():
-        pct = round(100 * counts[path] / total, 1) if total else 0
+        pct = round(100 * counts[path] / total, 1)
         html += f"""
         <span class="legend-item">
           <span class="legend-dot" style="background:{color};"></span>
@@ -297,6 +358,10 @@ def render_node_editor(data: Dict[str, Any]):
     nodes = data.get("nodes", [])
 
     st.subheader("Step Details Editor")
+
+    if not nodes:
+        st.info("No steps in this launch file.")
+        return
 
     labels = [f"{n['id']}. {n['label']}" for n in nodes]
     idx = st.selectbox("Select step", range(len(nodes)), format_func=lambda i: labels[i])
@@ -519,9 +584,9 @@ def main():
     st.markdown(PAGE_CSS, unsafe_allow_html=True)
 
     st.title("🧭 Global Launch Navigator")
-    st.caption("Report-style overview of your launch journey with branching paths, mini cards, and PDF export.")
+    st.caption("Enterprise-style launch flow map with branching paths, mini cards, and PDF export.")
 
-    # Sidebar – File handling
+    # Sidebar – Launch files
     st.sidebar.header("Launch File")
 
     files = list_launch_files()
@@ -551,20 +616,20 @@ def main():
     st.markdown("---")
 
     # Layout
-    left, right = st.columns([2.2, 1.8])
+    left, right = st.columns([2.3, 1.7])
 
     with left:
         st.subheader("Flow Overview")
-        st.markdown(render_phase_row(), unsafe_allow_html=True)
-        st.markdown(render_step_flow(data), unsafe_allow_html=True)
+        svg_html = build_flow_svg(data)
+        components.html(svg_html, height=440, scrolling=True)
         st.markdown(render_legend(data), unsafe_allow_html=True)
 
         st.markdown("### Export as PDF")
         if not REPORTLAB_AVAILABLE:
             st.warning("PDF export requires the 'reportlab' package. Add it to requirements.txt.")
         else:
-            mode = st.selectbox("Report type", ["Summary (1 page)", "Detailed (multi-page)"])
-            mode_key = "summary" if mode.startswith("Summary") else "detailed"
+            mode_label = st.selectbox("Report type", ["Summary (1 page)", "Detailed (multi-page)"])
+            mode_key = "summary" if mode_label.startswith("Summary") else "detailed"
             pdf_bytes = build_pdf(data, mode=mode_key)
             st.download_button(
                 "Download PDF report",
