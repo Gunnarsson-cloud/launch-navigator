@@ -5,7 +5,7 @@ from typing import Dict, Any, List, Tuple
 
 import streamlit as st
 
-# PDF support (optional but recommended)
+# PDF (optional but recommended)
 try:
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
     from reportlab.lib.styles import getSampleStyleSheet
@@ -18,7 +18,7 @@ except Exception:
 
 
 # -------------------------------------------------------------------
-# CONFIG & CONSTANTS
+# CONFIG
 # -------------------------------------------------------------------
 st.set_page_config(
     page_title="Global Launch Navigator",
@@ -55,9 +55,8 @@ PHASE_COLORS = {
     "Close & Sustain":  "#FFE5A0",
 }
 
-
 THEMES = {
-    "Nordic Blue": {
+    "Nordic Light": {
         "bg": "#f4f4f7",
         "accent": "#1d4ed8",
         "accent_soft": "#e0ebff",
@@ -75,6 +74,12 @@ THEMES = {
         "accent_soft": "#dcfce7",
         "text": "#052e16",
     },
+    "Midnight": {  # dark mode
+        "bg": "#020617",
+        "accent": "#facc15",
+        "accent_soft": "#0f172a",
+        "text": "#e5e7eb",
+    },
 }
 
 
@@ -82,13 +87,13 @@ THEMES = {
 # DATA HELPERS
 # -------------------------------------------------------------------
 def default_flow() -> Dict[str, Any]:
-    """Fallback demo flow, used if file missing or malformed."""
+    """Fallback launch flow."""
     steps = [
         # Phase 1
         dict(
             title="Assess launch and secure awareness",
             phase="Pilot & Initiate",
-            description="Clarify objectives, scope, and high-level success metrics.",
+            description="Clarify objectives, scope, and success metrics; align key stakeholders.",
             timeline="1–2w",
             volume=5,
             success=95,
@@ -97,7 +102,7 @@ def default_flow() -> Dict[str, Any]:
         dict(
             title="Central launch preparations",
             phase="Pilot & Initiate",
-            description="Align global stakeholders and prepare core materials.",
+            description="Prepare core assets, governance, and communication strategy.",
             timeline="2–3w",
             volume=10,
             success=92,
@@ -106,7 +111,7 @@ def default_flow() -> Dict[str, Any]:
         dict(
             title="Pilot solution",
             phase="Pilot & Initiate",
-            description="Run a limited pilot with a representative set of countries/sites.",
+            description="Run a focused pilot with a representative set of markets.",
             timeline="3–4w",
             volume=10,
             success=90,
@@ -116,7 +121,7 @@ def default_flow() -> Dict[str, Any]:
         dict(
             title="Prepare for global rollout",
             phase="Prepare & Startup",
-            description="Finalize business case and deployment plan based on pilot learnings.",
+            description="Translate pilot learnings into deployment playbook and wave plan.",
             timeline="2–3w",
             volume=20,
             success=93,
@@ -125,7 +130,7 @@ def default_flow() -> Dict[str, Any]:
         dict(
             title="Introduce launch and prioritize",
             phase="Prepare & Startup",
-            description="Prioritize markets and define rollout waves.",
+            description="Align on rollout waves, priorities, and dependencies.",
             timeline="1–2w",
             volume=20,
             success=90,
@@ -134,7 +139,7 @@ def default_flow() -> Dict[str, Any]:
         dict(
             title="Agree on ambition & timeline",
             phase="Prepare & Startup",
-            description="Confirm ambition level and timelines with key stakeholders.",
+            description="Confirm ambition level and time plan with senior stakeholders.",
             timeline="1–2w",
             volume=20,
             success=92,
@@ -144,7 +149,7 @@ def default_flow() -> Dict[str, Any]:
         dict(
             title="Plan launch and adoption",
             phase="Execute & Adopt",
-            description="Plan communication, training, and adoption activities.",
+            description="Detail communications, training, and support for each wave.",
             timeline="3–6w",
             volume=80,
             success=90,
@@ -153,7 +158,7 @@ def default_flow() -> Dict[str, Any]:
         dict(
             title="Deliver and adopt solution",
             phase="Execute & Adopt",
-            description="Deploy solution to markets and monitor adoption.",
+            description="Deploy solution, support markets, and monitor adoption KPIs.",
             timeline="6–12w",
             volume=80,
             success=88,
@@ -163,7 +168,7 @@ def default_flow() -> Dict[str, Any]:
         dict(
             title="Handover and close country launch",
             phase="Close & Sustain",
-            description="Transition to run-organization and confirm handover criteria.",
+            description="Transition to run organization; confirm handover criteria.",
             timeline="2–4w",
             volume=100,
             success=95,
@@ -172,7 +177,7 @@ def default_flow() -> Dict[str, Any]:
         dict(
             title="Follow up on value and adoption",
             phase="Close & Sustain",
-            description="Validate realized value and capture lessons learned.",
+            description="Validate benefits, adoption levels, and capture lessons learned.",
             timeline="4–6w",
             volume=100,
             success=93,
@@ -181,14 +186,13 @@ def default_flow() -> Dict[str, Any]:
         dict(
             title="Close launch initiative",
             phase="Close & Sustain",
-            description="Formal closure, governance update, and documentation.",
+            description="Formal closure, documentation, and governance updates.",
             timeline="1–2w",
             volume=100,
             success=97,
             path="Primary",
         ),
     ]
-    # add ids & order
     for i, s in enumerate(steps):
         s["id"] = str(uuid.uuid4())
         s["order"] = i
@@ -198,7 +202,6 @@ def default_flow() -> Dict[str, Any]:
 
 
 def load_flow() -> Dict[str, Any]:
-    """Load flow from JSON. Convert older 'nodes' structure if needed."""
     if not DATA_FILE.exists():
         return default_flow()
 
@@ -208,7 +211,7 @@ def load_flow() -> Dict[str, Any]:
     except Exception:
         return default_flow()
 
-    # Support old schema with "nodes"
+    # Support older schema with "nodes"
     if isinstance(raw, dict) and "steps" in raw:
         data = {"steps": list(raw["steps"])}
     elif isinstance(raw, dict) and "nodes" in raw:
@@ -231,7 +234,6 @@ def load_flow() -> Dict[str, Any]:
             )
         data = {"steps": steps}
     else:
-        # Unknown structure, fallback
         return default_flow()
 
     normalize_flow(data)
@@ -245,9 +247,7 @@ def save_flow(data: Dict[str, Any]) -> None:
 
 
 def normalize_flow(data: Dict[str, Any]) -> None:
-    """Ensure IDs, orders, defaults."""
     steps = data.get("steps", [])
-    # assign ids
     for s in steps:
         if "id" not in s:
             s["id"] = str(uuid.uuid4())
@@ -260,15 +260,14 @@ def normalize_flow(data: Dict[str, Any]) -> None:
         s.setdefault("success", 0)
         s.setdefault("owner", "")
         s.setdefault("status", "Planned")
-    # assign order within phase if missing
+
+    # order within phase
     for phase in PHASES:
         phase_steps = [s for s in steps if s["phase"] == phase]
-        phase_steps_sorted = sorted(
-            phase_steps, key=lambda x: x.get("order", 9999)
-        )
+        phase_steps_sorted = sorted(phase_steps, key=lambda x: x.get("order", 9999))
         for i, s in enumerate(phase_steps_sorted):
             s["order"] = i
-    # sort steps by (phase, order)
+
     steps.sort(
         key=lambda s: (
             PHASES.index(s["phase"]) if s["phase"] in PHASES else 999,
@@ -313,13 +312,12 @@ def apply_theme(theme_name: str) -> None:
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }}
 
-    /* top cards */
     .metric-card {{
-        background: white;
+        background: rgba(255,255,255,0.98);
         padding: 16px 18px;
         border-radius: 14px;
         box-shadow: 0 8px 20px rgba(15,23,42,0.08);
-        border: 1px solid #e5e7eb;
+        border: 1px solid rgba(148,163,184,0.45);
     }}
     .metric-label {{
         font-size: 11px;
@@ -331,16 +329,15 @@ def apply_theme(theme_name: str) -> None:
         font-size: 30px;
         font-weight: 700;
         margin-top: 4px;
-        color: #111827;
     }}
 
-    /* flow ribbon background */
     .flow-wrapper {{
         position: relative;
-        padding: 32px 24px;
+        padding: 24px 24px 18px 24px;
         border-radius: 24px;
         overflow: hidden;
         background: radial-gradient(circle at 0% 0%, #ffffff, #f9fafb 40%, #e5e7eb 100%);
+        margin-top: 8px;
     }}
 
     .flow-ribbon {{
@@ -366,70 +363,59 @@ def apply_theme(theme_name: str) -> None:
     }}
 
     .phase-header {{
-        display: inline-block;
-        padding: 10px 22px;
+        padding: 8px 18px;
         border-radius: 999px;
         background: var(--accent-soft);
-        color: #111827;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
+        display:inline-block;
         margin-bottom: 10px;
     }}
 
-    .phase-row {{
-        display: flex;
-        flex-wrap: wrap;
-        gap: 14px;
+    .phase-box {{
         margin-bottom: 18px;
     }}
 
     .step-card {{
-        flex: 1 1 230px;
-        max-width: 320px;
-        background: #f9fafb;
+        background: rgba(255,255,255,0.97);
         border-radius: 16px;
-        padding: 14px 14px 12px 14px;
-        box-shadow: 0 10px 25px rgba(15,23,42,0.12);
-        border: 1px solid rgba(148,163,184,0.35);
+        padding: 12px 12px 10px 12px;
+        box-shadow: 0 10px 25px rgba(15,23,42,0.13);
+        border: 1px solid rgba(148,163,184,0.4);
         position: relative;
-        overflow: hidden;
+        margin-bottom: 10px;
         transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
     }}
-
     .step-card:hover {{
         transform: translateY(-2px);
-        box-shadow: 0 14px 28px rgba(15,23,42,0.16);
+        box-shadow: 0 14px 30px rgba(15,23,42,0.18);
+    }}
+
+    .step-title {{
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 2px;
+    }}
+    .step-meta {{
+        font-size: 11px;
+        color: #6b7280;
+    }}
+    .step-desc {{
+        font-size: 11px;
+        color: #4b5563;
+        margin-top: 4px;
     }}
 
     .step-path-pill {{
         position: absolute;
         right: 10px;
-        top: 10px;
+        top: 8px;
         font-size: 10px;
         padding: 2px 9px;
         border-radius: 999px;
         color: white;
-        background: #6b7280;
-    }}
-
-    .step-title {{
-        font-size: 14px;
-        font-weight: 600;
-        color: #111827;
-        margin-bottom: 4px;
-    }}
-
-    .step-meta {{
-        font-size: 11px;
-        color: #6b7280;
-    }}
-
-    .step-desc {{
-        font-size: 11px;
-        color: #4b5563;
-        margin-top: 6px;
     }}
 
     .legend-pill {{
@@ -437,18 +423,43 @@ def apply_theme(theme_name: str) -> None:
         align-items:center;
         padding:4px 8px;
         border-radius:999px;
-        background:white;
+        background:rgba(255,255,255,0.96);
         box-shadow:0 2px 6px rgba(15,23,42,0.08);
         font-size:11px;
         margin-right:8px;
         margin-bottom:6px;
     }}
-
     .legend-dot {{
         width:12px;
         height:12px;
         border-radius:999px;
         margin-right:6px;
+    }}
+
+    /* Journey chevrons */
+    .journey-banner {{
+        display:flex;
+        align-items:center;
+        gap:6px;
+        margin: 14px 0 6px 0;
+        flex-wrap:wrap;
+    }}
+    .journey-step {{
+        padding:7px 14px;
+        border-radius:999px;
+        background:#e5e7eb;
+        font-size:11px;
+        letter-spacing:0.08em;
+        text-transform:uppercase;
+        font-weight:600;
+    }}
+    .journey-step--active {{
+        background:var(--accent);
+        color:var(--bg);
+    }}
+    .journey-arrow {{
+        font-size:11px;
+        color:#9ca3af;
     }}
     </style>
     """
@@ -456,17 +467,13 @@ def apply_theme(theme_name: str) -> None:
 
 
 # -------------------------------------------------------------------
-# METRICS / ANALYTICS
+# METRICS & JOURNEY BANNER
 # -------------------------------------------------------------------
 def compute_metrics(flow: Dict[str, Any]) -> Tuple[int, float, float]:
     steps = flow.get("steps", [])
     total = len(steps)
-    avg_success = (
-        sum([float(s.get("success", 0)) for s in steps]) / total if total else 0
-    )
-    avg_volume = (
-        sum([float(s.get("volume", 0)) for s in steps]) / total if total else 0
-    )
+    avg_success = sum(float(s.get("success", 0)) for s in steps) / total if total else 0
+    avg_volume = sum(float(s.get("volume", 0)) for s in steps) / total if total else 0
     return total, avg_success, avg_volume
 
 
@@ -474,9 +481,9 @@ def metrics_block(flow: Dict[str, Any]) -> None:
     total, avg_success, avg_volume = compute_metrics(flow)
     c1, c2, c3 = st.columns(3)
     for col, label, value in [
-        (c1, "Steps", total),
-        (c2, "Avg Success %", f"{avg_success:.1f}"),
-        (c3, "Avg Volume %", f"{avg_volume:.1f}"),
+        (c1, "Total steps", total),
+        (c2, "Avg success %", f"{avg_success:.1f}"),
+        (c3, "Avg volume %", f"{avg_volume:.1f}"),
     ]:
         with col:
             st.markdown(
@@ -490,49 +497,70 @@ def metrics_block(flow: Dict[str, Any]) -> None:
             )
 
 
+def journey_banner(active_phase: str | None = None) -> None:
+    html = '<div class="journey-banner">'
+    for i, phase in enumerate(PHASES):
+        cls = "journey-step"
+        if active_phase and phase == active_phase:
+            cls += " journey-step--active"
+        html += f'<div class="{cls}">{phase}</div>'
+        if i < len(PHASES) - 1:
+            html += '<div class="journey-arrow">➝</div>'
+    html += "</div>"
+    st.markdown(html, unsafe_allow_html=True)
+
+
 # -------------------------------------------------------------------
-# FLOW MAP (VIEW MODE)
+# OVERVIEW (2×2 GRID)
 # -------------------------------------------------------------------
-def flow_map(flow: Dict[str, Any]) -> None:
-    steps = flow.get("steps", [])
-    st.markdown("### Journey Overview")
-
-    st.markdown('<div class="flow-wrapper"><div class="flow-ribbon"></div><div class="flow-content">', unsafe_allow_html=True)
-
-    # per phase
-    for phase in PHASES:
-        phase_steps = [s for s in steps if s["phase"] == phase]
-        if not phase_steps:
-            continue
-
+def phase_box(flow: Dict[str, Any], phase: str) -> None:
+    steps = [s for s in flow["steps"] if s["phase"] == phase]
+    st.markdown(
+        f'<div class="phase-box"><div class="phase-header">{phase}</div>',
+        unsafe_allow_html=True,
+    )
+    for s in steps:
+        path = s.get("path", "Primary")
+        color = PATH_COLORS.get(path, "#6b7280")
+        meta = f'{s.get("timeline","")} · {s.get("volume",0)}% · {s.get("success",0)}%'
+        tooltip = f"Owner: {s.get('owner','N/A')} | Status: {s.get('status','N/A')}"
         st.markdown(
-            f'<div class="phase-header">{phase}</div>', unsafe_allow_html=True
+            f"""
+            <div class="step-card" title="{tooltip}">
+                <div class="step-path-pill" style="background:{color};">{path}</div>
+                <div class="step-title">{s["title"]}</div>
+                <div class="step-meta">{meta}</div>
+                <div class="step-desc">{s.get("description","")}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
-        st.markdown('<div class="phase-row">', unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-        for s in phase_steps:
-            path = s.get("path", "Primary")
-            color = PATH_COLORS.get(path, "#6b7280")
-            meta = f'{s.get("timeline","")} · {s.get("volume",0)}% volume · {s.get("success",0)}% success'
-            tooltip = (
-                f"Owner: {s.get('owner','N/A')} | Status: {s.get('status','N/A')}"
-            )
 
-            st.markdown(
-                f"""
-                <div class="step-card" title="{tooltip}">
-                    <div class="step-path-pill" style="background:{color};">
-                        {path}
-                    </div>
-                    <div class="step-title">{s["title"]}</div>
-                    <div class="step-meta">{meta}</div>
-                    <div class="step-desc">{s.get("description","")}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+def overview_page(flow: Dict[str, Any]) -> None:
+    metrics_block(flow)
+    journey_banner()
+    st.markdown("---")
 
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown(
+        '<div class="flow-wrapper"><div class="flow-ribbon"></div><div class="flow-content">',
+        unsafe_allow_html=True,
+    )
+
+    # row 1: Pilot & Prepare
+    c1, c2 = st.columns(2)
+    with c1:
+        phase_box(flow, "Pilot & Initiate")
+    with c2:
+        phase_box(flow, "Prepare & Startup")
+
+    # row 2: Execute & Close
+    c3, c4 = st.columns(2)
+    with c3:
+        phase_box(flow, "Execute & Adopt")
+    with c4:
+        phase_box(flow, "Close & Sustain")
 
     st.markdown("</div></div>", unsafe_allow_html=True)
 
@@ -550,17 +578,18 @@ def flow_map(flow: Dict[str, Any]) -> None:
 
 
 # -------------------------------------------------------------------
-# PHASE VIEW + HYBRID EDITOR
+# PHASE VIEW + INLINE EDITOR
 # -------------------------------------------------------------------
 def phase_view(flow: Dict[str, Any], phase: str) -> None:
+    journey_banner(phase)
+    st.subheader(f"{phase} — steps")
+
     steps = [s for s in flow["steps"] if s["phase"] == phase]
-    st.subheader(f"{phase} — overview")
 
     for s in steps:
         path_color = PATH_COLORS.get(s.get("path", "Primary"), "#6b7280")
         meta = f'{s.get("timeline","")} · {s.get("volume",0)}% · {s.get("success",0)}%'
         with st.container(border=True):
-            # viewer
             st.markdown(
                 f"""
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;">
@@ -584,21 +613,13 @@ def phase_view(flow: Dict[str, Any], phase: str) -> None:
 
 
 def edit_step(flow: Dict[str, Any], step: Dict[str, Any]) -> None:
-    """Hybrid inline editor – unique keys based on id."""
     step_id = step["id"]
     idx = next(i for i, s in enumerate(flow["steps"]) if s["id"] == step_id)
     s = flow["steps"][idx]
 
-    s["title"] = st.text_input(
-        "Title",
-        value=s["title"],
-        key=f"title_{step_id}",
-    )
+    s["title"] = st.text_input("Title", value=s["title"], key=f"title_{step_id}")
     s["description"] = st.text_area(
-        "Description",
-        value=s.get("description", ""),
-        key=f"desc_{step_id}",
-        height=90,
+        "Description", value=s.get("description", ""), key=f"desc_{step_id}", height=90
     )
 
     col1, col2 = st.columns(2)
@@ -606,9 +627,7 @@ def edit_step(flow: Dict[str, Any], step: Dict[str, Any]) -> None:
         s["phase"] = st.selectbox(
             "Phase",
             PHASES,
-            index=PHASES.index(s["phase"])
-            if s["phase"] in PHASES
-            else 0,
+            index=PHASES.index(s["phase"]) if s["phase"] in PHASES else 0,
             key=f"phase_{step_id}",
         )
         s["path"] = st.selectbox(
@@ -620,10 +639,9 @@ def edit_step(flow: Dict[str, Any], step: Dict[str, Any]) -> None:
             key=f"path_{step_id}",
         )
         s["timeline"] = st.text_input(
-            "Timeline",
-            value=s.get("timeline", ""),
-            key=f"time_{step_id}",
+            "Timeline", value=s.get("timeline", ""), key=f"time_{step_id}"
         )
+
     with col2:
         s["volume"] = st.number_input(
             "Volume %",
@@ -649,10 +667,9 @@ def edit_step(flow: Dict[str, Any], step: Dict[str, Any]) -> None:
             ),
             key=f"status_{step_id}",
         )
+
     s["owner"] = st.text_input(
-        "Owner",
-        value=s.get("owner", ""),
-        key=f"owner_{step_id}",
+        "Owner", value=s.get("owner", ""), key=f"owner_{step_id}"
     )
 
     flow["steps"][idx] = s
@@ -660,10 +677,10 @@ def edit_step(flow: Dict[str, Any], step: Dict[str, Any]) -> None:
 
 
 # -------------------------------------------------------------------
-# REORDER (pseudo drag & drop)
+# REORDER PAGE (click up/down arrows)
 # -------------------------------------------------------------------
 def reorder_page(flow: Dict[str, Any]) -> None:
-    st.subheader("Reorder steps (click arrows to move cards)")
+    st.subheader("Reorder steps (click arrows)")
 
     for phase in PHASES:
         st.markdown(f"#### {phase}")
@@ -682,7 +699,7 @@ def reorder_page(flow: Dict[str, Any]) -> None:
                 if st.button("↓", key=f"down_{step_id}"):
                     s["order"] = order + 1
             with col3:
-                st.write(f"**{s['title']}**  \n_{phase}_  · order: {s['order']}")
+                st.write(f"**{s['title']}**  \n_order: {s['order']}_")
 
         st.markdown("---")
 
@@ -694,13 +711,88 @@ def reorder_page(flow: Dict[str, Any]) -> None:
 
 
 # -------------------------------------------------------------------
+# EXECUTIVE BRIEFING
+# -------------------------------------------------------------------
+def executive_briefing(flow: Dict[str, Any]) -> None:
+    steps = flow.get("steps", [])
+    total, avg_success, avg_volume = compute_metrics(flow)
+
+    st.subheader("Executive briefing")
+    st.write(
+        "Structured, auto-generated summary based on the current launch configuration."
+    )
+
+    # Phase stats
+    phase_stats = []
+    for phase in PHASES:
+        ps = [s for s in steps if s["phase"] == phase]
+        if not ps:
+            continue
+        p_success = sum(float(x.get("success", 0)) for x in ps) / len(ps)
+        p_volume = sum(float(x.get("volume", 0)) for x in ps) / len(ps)
+        phase_stats.append((phase, p_success, p_volume))
+
+    st.markdown("### 1. Overall status")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total steps", total)
+    with col2:
+        st.metric("Avg success", f"{avg_success:.1f}%")
+    with col3:
+        st.metric("Avg volume", f"{avg_volume:.1f}%")
+
+    st.markdown("### 2. Phase readiness")
+    for phase, psuccess, pvol in phase_stats:
+        badge = "Healthy"
+        if psuccess < 85:
+            badge = "At risk"
+        elif psuccess < 90:
+            badge = "Needs attention"
+        st.write(
+            f"- **{phase}** – {psuccess:.1f}% success, {pvol:.1f}% volume "
+            f"→ _{badge}_"
+        )
+
+    st.markdown("### 3. Potential bottlenecks")
+    low_success = sorted(
+        steps, key=lambda s: (float(s.get("success", 0)), -float(s.get("volume", 0)))
+    )[:3]
+    if low_success:
+        for s in low_success:
+            st.write(
+                f"- **{s['title']}** ({s['phase']}) – "
+                f"{s.get('success',0)}% success · {s.get('volume',0)}% volume"
+            )
+    else:
+        st.write("- No obvious bottlenecks detected at this granularity.")
+
+    st.markdown("### 4. Suggested near-term priorities")
+    priorities = sorted(
+        steps, key=lambda s: (s.get("phase"), -float(s.get("volume", 0)))
+    )[:3]
+    for s in priorities:
+        st.write(
+            f"- **{s['title']}** ({s['phase']}) – high footprint ({s.get('volume',0)}%)"
+        )
+
+    st.markdown("### 5. Narrative overview")
+    narrative = (
+        f"Across {total} steps, the launch shows an average success likelihood of "
+        f"{avg_success:.1f}% and an average volume impact of {avg_volume:.1f}%. "
+        "Pilot & Initiate and Prepare & Startup define the strategic foundation, "
+        "while Execute & Adopt and Close & Sustain carry most of the value realization. "
+        "Focus effort on high-volume steps with sub-90% success to de-risk the path "
+        "to value and avoid late surprises in Execute & Adopt."
+    )
+    st.write(narrative)
+
+
+# -------------------------------------------------------------------
 # PDF EXPORT
 # -------------------------------------------------------------------
 def export_pdf(flow: Dict[str, Any]) -> None:
     if not REPORTLAB_AVAILABLE:
-        st.warning(
-            "PDF export requires the 'reportlab' package in requirements.txt."
-        )
+        st.warning("PDF export requires 'reportlab' in requirements.txt.")
         return
 
     filename = "launch_navigator_report.pdf"
@@ -712,35 +804,26 @@ def export_pdf(flow: Dict[str, Any]) -> None:
     story.append(Spacer(1, 0.2 * inch))
 
     total, avg_success, avg_volume = compute_metrics(flow)
-    story.append(
-        Paragraph(f"Total steps: {total}", styles["Normal"])
-    )
-    story.append(
-        Paragraph(f"Average success: {avg_success:.1f}%", styles["Normal"])
-    )
-    story.append(
-        Paragraph(f"Average volume: {avg_volume:.1f}%", styles["Normal"])
-    )
+    story.append(Paragraph(f"Total steps: {total}", styles["Normal"]))
+    story.append(Paragraph(f"Average success: {avg_success:.1f}%", styles["Normal"]))
+    story.append(Paragraph(f"Average volume: {avg_volume:.1f}%", styles["Normal"]))
     story.append(Spacer(1, 0.3 * inch))
 
+    steps = flow.get("steps", [])
     for phase in PHASES:
         story.append(Paragraph(phase, styles["Heading2"]))
         story.append(Spacer(1, 0.15 * inch))
-        phase_steps = [
-            s for s in flow["steps"] if s["phase"] == phase
-        ]
-        for s in phase_steps:
+        psteps = [s for s in steps if s["phase"] == phase]
+        for s in psteps:
             story.append(Paragraph(s["title"], styles["Heading4"]))
             story.append(
-                Paragraph(
-                    s.get("description", ""), styles["BodyText"]
-                )
+                Paragraph(s.get("description", ""), styles["BodyText"])
             )
             meta = (
-                f"Timeline: {s.get('timeline','')} "
-                f"· Volume: {s.get('volume',0)}% "
-                f"· Success: {s.get('success',0)}% "
-                f"· Path: {s.get('path','Primary')}"
+                f"Timeline: {s.get('timeline','')} · "
+                f"Volume: {s.get('volume',0)}% · "
+                f"Success: {s.get('success',0)}% · "
+                f"Path: {s.get('path','Primary')}"
             )
             story.append(Paragraph(meta, styles["BodyText"]))
             story.append(Spacer(1, 0.1 * inch))
@@ -758,47 +841,42 @@ def export_pdf(flow: Dict[str, Any]) -> None:
 
 
 # -------------------------------------------------------------------
-# MAIN APP
+# MAIN
 # -------------------------------------------------------------------
 def main() -> None:
-    # Theme selection (sidebar)
+    # Theme selector
     with st.sidebar:
         st.title("📘 Global Launch Navigator")
         theme_name = st.selectbox(
             "Theme",
             list(THEMES.keys()),
-            index=list(THEMES.keys()).index("Nordic Blue"),
+            index=list(THEMES.keys()).index("Nordic Light"),
         )
     apply_theme(theme_name)
 
     flow = get_flow()
     normalize_flow(flow)
 
-    # Navigation
     with st.sidebar:
         st.markdown("### Navigation")
         page = st.radio(
             "",
-            ["Overview"] + PHASES + ["Reorder", "Export PDF"],
+            ["Overview"] + PHASES + ["Reorder", "Executive briefing", "Export PDF"],
         )
-        if st.button("💾 Save to JSON"):
+        if st.button("💾 Save JSON"):
             save_flow(flow)
             st.success("Saved to data/default_flow.json")
 
     st.title("🧭 Global Launch Navigator")
 
-    # Pages
     if page == "Overview":
-        metrics_block(flow)
-        st.markdown("---")
-        flow_map(flow)
-
+        overview_page(flow)
     elif page in PHASES:
         phase_view(flow, page)
-
     elif page == "Reorder":
         reorder_page(flow)
-
+    elif page == "Executive briefing":
+        executive_briefing(flow)
     elif page == "Export PDF":
         export_pdf(flow)
 
