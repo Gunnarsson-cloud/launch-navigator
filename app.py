@@ -43,12 +43,8 @@ PHASE_SHORT = {
     "Close & Sustain": "CLOSE & SUSTAIN",
 }
 
-PHASE_COLORS = {
-    "Pilot & Initiate": "#FFE7A3",
-    "Prepare & Startup": "#FFE7A3",
-    "Execute & Adopt": "#FFE7A3",
-    "Close & Sustain": "#FFE7A3",
-}
+# all phases same yellow – matches your slide
+PHASE_COLOR_BAR = "#FFE7A3"
 
 PATH_COLORS = {
     "Primary": "#16a34a",   # green
@@ -56,12 +52,11 @@ PATH_COLORS = {
     "Enhanced": "#6366f1",  # indigo
     "Exit": "#ef4444",      # red
 }
-
 DEFAULT_PATH = "Primary"
 
 
 # ------------------------------------------------------
-# GLOBAL CSS
+# GLOBAL CSS (light, consulting style)
 # ------------------------------------------------------
 PAGE_CSS = """
 <style>
@@ -70,7 +65,7 @@ PAGE_CSS = """
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-/* Top metrics */
+/* top metrics */
 .big-metric {
     font-size: 32px;
     font-weight: 700;
@@ -82,7 +77,7 @@ PAGE_CSS = """
     margin-top: -6px;
 }
 
-/* Phase chevron bar */
+/* phase chevron bar */
 .chevron-row {
     display: flex;
     justify-content: center;
@@ -90,7 +85,6 @@ PAGE_CSS = """
     margin: 4px 0 22px 0;
 }
 .chevron {
-    position: relative;
     padding: 14px 40px;
     background: #ffe7a3;
     font-weight: 700;
@@ -102,42 +96,57 @@ PAGE_CSS = """
     box-shadow: 0 1px 3px rgba(0,0,0,0.18);
 }
 
-/* Step cards (overview) */
-.step-grid {
+/* overview grid */
+.overview-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 18px;
     margin-top: 6px;
 }
+.phase-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.phase-column-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 2px;
+}
+
+/* step cards (overview) */
 .step-card {
     background: #ffffff;
-    border-radius: 16px;
-    padding: 14px 16px 12px 16px;
+    border-radius: 14px;
+    padding: 10px 12px 8px 12px;
     box-shadow: 0 8px 18px rgba(15,23,42,0.06);
     border: 1px solid #e5e7eb;
     position: relative;
 }
 .step-card-header {
     display: flex;
-    align-items: center;
-    margin-bottom: 4px;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 2px;
 }
 .step-badge {
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: #9ca3af;
-    margin-right: 8px;
 }
 .step-title {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #111827;
 }
 .step-sub {
-    font-size: 11px;
+    font-size: 10px;
     color: #6b7280;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 .step-meta {
     font-size: 10px;
@@ -145,19 +154,19 @@ PAGE_CSS = """
 }
 .path-pill {
     position: absolute;
-    top: 10px;
-    right: 12px;
-    font-size: 10px;
+    top: 8px;
+    right: 10px;
+    font-size: 9px;
     padding: 2px 8px;
     border-radius: 999px;
     color: white;
 }
 
-/* Phase detail cards */
+/* phase detail cards */
 .phase-card {
     background: #ffffff;
     border-radius: 18px;
-    padding: 16px 18px 14px 18px;
+    padding: 14px 16px 10px 16px;
     box-shadow: 0 10px 22px rgba(15,23,42,0.08);
     border-left: 3px solid #e5e7eb;
     margin-bottom: 12px;
@@ -189,7 +198,7 @@ PAGE_CSS = """
     margin-top: 4px;
 }
 
-/* Legend */
+/* legend */
 .legend-box {
     margin-top: 12px;
     background: #ffffff;
@@ -208,6 +217,18 @@ PAGE_CSS = """
     height: 11px;
     border-radius: 999px;
     margin-right: 6px;
+}
+
+/* responsive tweak */
+@media (max-width: 1100px) {
+    .overview-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (max-width: 780px) {
+    .overview-grid {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
 """
@@ -255,16 +276,16 @@ def render_metrics(data: Dict[str, Any]):
 
     with c1:
         st.markdown(f"<p class='big-metric'>{total_steps}</p>", unsafe_allow_html=True)
-        st.markdown("<p class='big-label'>Steps</p>", unsafe_allow_html=True)
+        st.markdown("<p class='big-label'>STEPS</p>", unsafe_allow_html=True)
 
     with c2:
         txt = f"{avg_success}%" if avg_success is not None else "—"
         st.markdown(f"<p class='big-metric'>{txt}</p>", unsafe_allow_html=True)
-        st.markdown("<p class='big-label'>Avg Success</p>", unsafe_allow_html=True)
+        st.markdown("<p class='big-label'>AVG SUCCESS</p>", unsafe_allow_html=True)
 
     with c3:
         st.markdown(f"<p class='big-metric'>{active_steps}</p>", unsafe_allow_html=True)
-        st.markdown("<p class='big-label'>Active</p>", unsafe_allow_html=True)
+        st.markdown("<p class='big-label'>ACTIVE</p>", unsafe_allow_html=True)
 
 
 # ------------------------------------------------------
@@ -278,56 +299,61 @@ def render_phase_chevrons():
     st.markdown(html, unsafe_allow_html=True)
 
 
-def render_overview_cards(data: Dict[str, Any]):
-    nodes = data.get("nodes", [])
-    if not nodes:
-        st.info("No steps defined in this launch file.")
-        return
+def get_nodes_by_phase(data: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
+    result: Dict[str, List[Dict[str, Any]]] = {p: [] for p in PHASES}
+    for n in data.get("nodes", []):
+        p = n.get("phase")
+        if p in result:
+            result[p].append(n)
+    return result
 
-    html = '<div class="step-grid">'
-    for node in nodes:
-        phase = node.get("phase", "")
-        label = node.get("label", "")
-        status = node.get("status", "")
-        time_est = node.get("time_estimate", "")
-        success = node.get("success_rate", "")
-        volume = node.get("volume_pct", "")
-        owner = node.get("owner", "")
-        path = node.get("path") or DEFAULT_PATH
-        color = PATH_COLORS.get(path, "#9ca3af")
 
-        tooltip_lines = [
-            f"Phase: {phase}",
-            f"Path: {path}",
-            f"Status: {status or 'N/A'}",
-            f"Owner: {owner or 'N/A'}",
-            f"Time: {time_est or 'N/A'}",
-            f"Success: {success or 'N/A'}",
-            f"Volume: {volume or 'N/A'}%",
-        ]
-        tooltip = "&#10;".join(tooltip_lines)
+def render_overview_grid(data: Dict[str, Any]):
+    by_phase = get_nodes_by_phase(data)
+    html = '<div class="overview-grid">'
+    for phase in PHASES:
+        html += '<div class="phase-column">'
+        html += f'<div class="phase-column-label">{PHASE_SHORT[phase]}</div>'
+        for node in by_phase.get(phase, []):
+            label = node.get("label", "")
+            time_est = node.get("time_estimate", "")
+            success = node.get("success_rate", "")
+            volume = node.get("volume_pct", "")
+            path = node.get("path") or DEFAULT_PATH
+            color = PATH_COLORS.get(path, "#9ca3af")
+            status = node.get("status", "")
 
-        meta_bits = []
-        if time_est:
-            meta_bits.append(time_est)
-        if success:
-            meta_bits.append(f"{success} success")
-        if volume not in ("", None):
-            meta_bits.append(f"{volume}% volume")
-        meta = " · ".join(meta_bits)
+            tooltip_lines = [
+                f"Phase: {phase}",
+                f"Path: {path}",
+                f"Status: {status or 'N/A'}",
+                f"Time: {time_est or 'N/A'}",
+                f"Success: {success or 'N/A'}",
+                f"Volume: {volume or 'N/A'}%",
+            ]
+            tooltip = "&#10;".join(tooltip_lines)
 
-        html += f"""
-        <div class="step-card" title="{tooltip}">
-          <div class="path-pill" style="background:{color};">{path}</div>
-          <div class="step-card-header">
-            <div class="step-badge">STEP {node.get('id','')}</div>
-            <div class="step-title">{label}</div>
-          </div>
-          <div class="step-sub">{phase}</div>
-          <div class="step-meta">{meta}</div>
-        </div>
-        """
+            meta_bits = []
+            if time_est:
+                meta_bits.append(time_est)
+            if success:
+                meta_bits.append(f"{success} success")
+            if volume not in ("", None):
+                meta_bits.append(f"{volume}% volume")
+            meta = " · ".join(meta_bits)
 
+            html += f"""
+            <div class="step-card" title="{tooltip}">
+              <div class="path-pill" style="background:{color};">{path}</div>
+              <div class="step-card-header">
+                <div class="step-badge">STEP {node.get('id','')}</div>
+                <div class="step-title">{label}</div>
+              </div>
+              <div class="step-sub">{phase}</div>
+              <div class="step-meta">{meta}</div>
+            </div>
+            """
+        html += "</div>"
     html += "</div>"
     st.markdown(html, unsafe_allow_html=True)
 
@@ -354,7 +380,7 @@ def render_path_legend(data: Dict[str, Any]):
 
 
 # ------------------------------------------------------
-# PHASE DETAIL
+# PHASE DETAIL VIEW
 # ------------------------------------------------------
 def get_nodes_for_phase(data: Dict[str, Any], phase: str) -> List[Dict[str, Any]]:
     return [n for n in data.get("nodes", []) if n.get("phase") == phase]
@@ -408,20 +434,20 @@ def render_phase_cards(nodes: List[Dict[str, Any]]):
 
 
 def render_node_editor(data: Dict[str, Any], phase: str):
-    nodes = get_nodes_for_phase(data, phase)
     all_nodes = data.get("nodes", [])
+    phase_nodes = get_nodes_for_phase(data, phase)
 
     st.subheader("Edit step in this phase")
 
-    if not nodes:
+    if not phase_nodes:
         st.info("No steps in this phase.")
         return
 
-    labels = [f"{n['id']}. {n['label']}" for n in nodes]
-    idx_in_phase = st.selectbox("Select step", range(len(nodes)), format_func=lambda i: labels[i])
-    node = nodes[idx_in_phase]
+    labels = [f"{n['id']}. {n['label']}" for n in phase_nodes]
+    idx_in_phase = st.selectbox("Select step", range(len(phase_nodes)), format_func=lambda i: labels[i])
+    node = phase_nodes[idx_in_phase]
 
-    # Find index in global list for writing back
+    # locate in global list
     global_index = next(i for i, n in enumerate(all_nodes) if n["id"] == node["id"])
 
     st.markdown("### Basic Info")
@@ -614,7 +640,7 @@ def main():
     st.markdown(PAGE_CSS, unsafe_allow_html=True)
 
     st.title("🧭 Global Launch Navigator")
-    st.caption("Clean, report-style view of your launch journey, structured by phase.")
+    st.caption("Clean report-style overview of your launch journey, structured by phase and path.")
 
     # Sidebar — launch files
     st.sidebar.header("Launch File")
@@ -653,7 +679,7 @@ def main():
     with overview_tab:
         st.subheader("Journey Overview")
         render_phase_chevrons()
-        render_overview_cards(data)
+        render_overview_grid(data)
         render_path_legend(data)
 
         st.markdown("### Export as PDF")
