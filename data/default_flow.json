@@ -1,0 +1,169 @@
+{
+  "name": "Global Launch – Example",
+  "description": "Example launch journey with demo data for presentation.",
+  "nodes": [
+    {
+      "id": 1,
+      "label": "Assess launch and secure awareness",
+      "phase": "Pilot & Initiate",
+      "description": "Initial assessment, scope and stakeholder awareness sessions.",
+      "time_estimate": "3-5d",
+      "volume_pct": 100,
+      "success_rate": "96",
+      "status": "Completed",
+      "owner": "Global Launch Lead",
+      "links": [
+        "https://example.com/assessment-brief"
+      ],
+      "notes": "Country X, Y and Z shortlisted.",
+      "attachments": []
+    },
+    {
+      "id": 2,
+      "label": "Central launch preparations",
+      "phase": "Pilot & Initiate",
+      "description": "Prepare communication, training and technical readiness centrally.",
+      "time_estimate": "5-10d",
+      "volume_pct": 100,
+      "success_rate": "93",
+      "status": "Completed",
+      "owner": "Central Enablement",
+      "links": [
+        "https://example.com/central-prep"
+      ],
+      "notes": "Key materials ready in EN.",
+      "attachments": []
+    },
+    {
+      "id": 3,
+      "label": "Pilot solution",
+      "phase": "Pilot & Initiate",
+      "description": "Run a controlled pilot with one or two markets.",
+      "time_estimate": "10-20d",
+      "volume_pct": 25,
+      "success_rate": "90",
+      "status": "Completed",
+      "owner": "Pilot Country Team",
+      "links": [
+        "https://example.com/pilot-report"
+      ],
+      "notes": "Positive feedback, minor UX gaps.",
+      "attachments": []
+    },
+    {
+      "id": 4,
+      "label": "Prepare for Global Rollout",
+      "phase": "Pilot & Initiate",
+      "description": "Refine solution and rollout kit based on pilot learnings.",
+      "time_estimate": "7-14d",
+      "volume_pct": 100,
+      "success_rate": "92",
+      "status": "In progress",
+      "owner": "Global Product Owner",
+      "links": [
+        "https://example.com/rollout-kit"
+      ],
+      "notes": "Localization in progress.",
+      "attachments": []
+    },
+    {
+      "id": 5,
+      "label": "Introduce launch and prioritize",
+      "phase": "Prepare & Startup",
+      "description": "Present launch to countries and confirm which ones join which wave.",
+      "time_estimate": "5-7d",
+      "volume_pct": 100,
+      "success_rate": "94",
+      "status": "In progress",
+      "owner": "Country Engagement Lead",
+      "links": [],
+      "notes": "Wave 1: 5 countries confirmed.",
+      "attachments": []
+    },
+    {
+      "id": 6,
+      "label": "Agree on ambition timeline",
+      "phase": "Prepare & Startup",
+      "description": "Align on ambition level and timeline per country.",
+      "time_estimate": "5-10d",
+      "volume_pct": 100,
+      "success_rate": "91",
+      "status": "Planned",
+      "owner": "Program PMO",
+      "links": [],
+      "notes": "",
+      "attachments": []
+    },
+    {
+      "id": 7,
+      "label": "Plan launch and adoption",
+      "phase": "Execute & Adopt",
+      "description": "Detailed planning of launch activities and adoption tactics.",
+      "time_estimate": "10-15d",
+      "volume_pct": 100,
+      "success_rate": "89",
+      "status": "Planned",
+      "owner": "Country Launch Owner",
+      "links": [],
+      "notes": "",
+      "attachments": []
+    },
+    {
+      "id": 8,
+      "label": "Deliver and adopt solution",
+      "phase": "Execute & Adopt",
+      "description": "Go-live, hypercare and active adoption support.",
+      "time_estimate": "20-40d",
+      "volume_pct": 100,
+      "success_rate": "87",
+      "status": "Planned",
+      "owner": "Country & Central Teams",
+      "links": [],
+      "notes": "",
+      "attachments": []
+    },
+    {
+      "id": 9,
+      "label": "Hand over and close country launch",
+      "phase": "Execute & Adopt",
+      "description": "Handover to BAU and close country launch formally.",
+      "time_estimate": "5-7d",
+      "volume_pct": 100,
+      "success_rate": "90",
+      "status": "Planned",
+      "owner": "Country Business Owner",
+      "links": [],
+      "notes": "",
+      "attachments": []
+    },
+    {
+      "id": 10,
+      "label": "Follow up on value and adoption",
+      "phase": "Close & Sustain",
+      "description": "Measure value, adoption and define follow-up actions.",
+      "time_estimate": "20-30d",
+      "volume_pct": 100,
+      "success_rate": "85",
+      "status": "Planned",
+      "owner": "Analytics & Insight",
+      "links": [],
+      "notes": "",
+      "attachments": []
+    },
+    {
+      "id": 11,
+      "label": "Close launch initiative",
+      "phase": "Close & Sustain",
+      "description": "Final closure of the launch initiative and documentation.",
+      "time_estimate": "3-5d",
+      "volume_pct": 100,
+      "success_rate": "88",
+      "status": "Planned",
+      "owner": "Program PMO",
+      "links": [],
+      "notes": "",
+      "attachments": []
+    }
+  ],
+  "links": []
+}
